@@ -21,7 +21,7 @@
 
 ### 方式一：作为用户脚本安装 (推荐)
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 等脚本管理器。
-2. [点击此处从 Greasy Fork 安装]() *(正在发布中...)*。
+2. [点击此处从 Greasy Fork 安装](https://greasyfork.org/scripts/564355)。
 
 ### 方式二：浏览器控制台
 1. 复制本项目中的 `twitter_unfollow_helper.js` 全部代码。
