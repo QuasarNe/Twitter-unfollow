@@ -1,6 +1,6 @@
 # Twitter 互关检测助手 (Twitter Unfollow Helper)
 
-简体中文 | [English](./README.md)
+中文 | [English](./README.md)
 
 这是一个强大的 JavaScript 浏览器脚本（支持油猴/控制台），旨在帮助 Twitter (X) 用户快速、直观地在“正在关注”列表页面筛选出那些**没有回关你**的用户。
 

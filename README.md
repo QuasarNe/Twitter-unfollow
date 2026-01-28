@@ -1,6 +1,6 @@
 # Twitter Unfollow Helper
 
-[简体中文](./README_CN.md) | English
+[中文](./README_CN.md) | English
 
 A powerful JavaScript browser extension (Tampermonkey/Console) to help Twitter (X) users quickly identify and filter users who **don't follow you back**.
 
