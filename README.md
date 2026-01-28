@@ -21,7 +21,7 @@ A powerful JavaScript browser extension (Tampermonkey/Console) to help Twitter (
 
 ### Option 1: Install as Userscript (Recommended)
 1. Install a Userscript manager like [Tampermonkey](https://www.tampermonkey.net/).
-2. [Click here to install from Greasy Fork](https://greasyfork.org/scripts/YOUR_SCRIPT_ID) *(Currently publishing...)*.
+2. [Click here to install from Greasy Fork](https://greasyfork.org/scripts/564355).
 
 ### Option 2: Browser Console
 1. Copy the code from `twitter_unfollow_helper.js`.
