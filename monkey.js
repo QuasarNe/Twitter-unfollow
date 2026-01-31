@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitter/X 互关检测助手 Unfollow Helper
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  在 Twitter/X 的“正在关注”页面自动筛选未回关的用户。未回关者标红，已回关者隐藏。支持物理移除模式。
 // @author       QuasarNe
 // @match        https://twitter.com/*/following
@@ -51,82 +51,152 @@
         });
     };
 
-    let isPaused = true; // 油猴版默认暂停，等待用户点击开始
+    // 2. 检测逻辑独立运行 (高频 500ms)，仅在正在关注页面生效
+    const detectionTask = setInterval(() => {
+        if (window.location.href.includes('/following')) {
+            highlightUnfollowers();
+        }
+    }, 500);
 
-    // 2. 检测逻辑独立运行 (高频 500ms)，暂停滚动时检测依然有效
-    const detectionTask = setInterval(highlightUnfollowers, 500);
+    let scrollTask = null;
+    let scrollSpeed = 1200; // 默认间隔 1200ms
 
-    // 3. 滚动逻辑独立运行 (1200ms)，受暂停开关控制
-    const scrollTask = setInterval(() => {
-        if (isPaused) return;
-        window.scrollBy({
-            top: window.innerHeight * 0.9,
-            behavior: 'smooth'
-        });
-    }, 1200);
+    const startScrolling = () => {
+        if (scrollTask) clearInterval(scrollTask);
+        scrollTask = setInterval(() => {
+            if (!window.location.href.includes('/following')) return;
+            window.scrollBy({
+                top: window.innerHeight * 0.8,
+                behavior: 'smooth'
+            });
+        }, scrollSpeed);
+    };
 
-    // 4. 控制面板
+    const stopScrolling = () => {
+        if (scrollTask) {
+            clearInterval(scrollTask);
+            scrollTask = null;
+        }
+    };
+
+    // 3. 控制面板
     const initUI = () => {
         if (document.getElementById('twitter-helper-panel')) return;
 
         const controlPanel = document.createElement('div');
         controlPanel.id = 'twitter-helper-panel';
-        controlPanel.style.position = 'fixed';
-        controlPanel.style.top = '10px';
-        controlPanel.style.right = '10px';
-        controlPanel.style.zIndex = '9999';
-        controlPanel.style.display = 'flex';
-        controlPanel.style.gap = '10px';
+        controlPanel.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        `;
+
+        const btnRow = document.createElement('div');
+        btnRow.style.display = 'flex';
+        btnRow.style.gap = '8px';
+
+        const configRow = document.createElement('div');
+        configRow.style.display = 'flex';
+        configRow.style.alignItems = 'center';
+        configRow.style.gap = '8px';
+        configRow.style.fontSize = '12px';
+        configRow.style.color = '#536471';
+
+        const scrollBtn = document.createElement('button');
+        scrollBtn.innerText = '开始自动滚动';
+        
+        const clearBtn = document.createElement('button');
+        clearBtn.innerText = '移除互关';
 
         const stopBtn = document.createElement('button');
-        stopBtn.innerText = '停止并刷新';
-        
-        const pauseBtn = document.createElement('button');
-        pauseBtn.innerText = '开始滚动';
-        pauseBtn.style.backgroundColor = '#00ba7c';
+        stopBtn.innerText = '关闭脚本';
 
-        const clearBtn = document.createElement('button');
-        clearBtn.innerText = '清理列表(移除互关)';
+        const speedLabel = document.createElement('span');
+        speedLabel.innerText = '滚动间隔(ms):';
+        const speedInput = document.createElement('input');
+        speedInput.type = 'number';
+        speedInput.value = scrollSpeed;
+        speedInput.step = 100;
+        speedInput.min = 200;
+        speedInput.style.cssText = `
+            width: 60px;
+            padding: 4px;
 
-        [stopBtn, pauseBtn, clearBtn].forEach(btn => {
-            btn.style.padding = '10px 20px';
-            btn.style.backgroundColor = btn.style.backgroundColor || '#1d9bf0';
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: inherit;
+        `;
+
+        [scrollBtn, clearBtn, stopBtn].forEach(btn => {
+            btn.style.padding = '8px 16px';
+            btn.style.backgroundColor = '#1d9bf0';
             btn.style.color = 'white';
             btn.style.border = 'none';
             btn.style.borderRadius = '20px';
             btn.style.cursor = 'pointer';
             btn.style.fontWeight = 'bold';
-            btn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+            btn.style.fontSize = '13px';
         });
 
-        pauseBtn.onclick = () => {
-            isPaused = !isPaused;
-            pauseBtn.innerText = isPaused ? '恢复滚动' : '暂停滚动';
-            pauseBtn.style.backgroundColor = isPaused ? '#ffa500' : '#1d9bf0';
+        scrollBtn.onclick = () => {
+            if (scrollTask) {
+                stopScrolling();
+                scrollBtn.innerText = '开始自动滚动';
+                scrollBtn.style.backgroundColor = '#1d9bf0';
+            } else {
+                startScrolling();
+                scrollBtn.innerText = '停止自动滚动';
+                scrollBtn.style.backgroundColor = '#ffa500';
+            }
         };
-        
-        stopBtn.onclick = () => {
-            location.reload();
+
+        speedInput.onchange = (e) => {
+            scrollSpeed = parseInt(e.target.value) || 1200;
+            if (scrollTask) startScrolling(); // 如果正在滚动，立即应用新速度
         };
 
         clearBtn.onclick = () => {
-            isPaused = true;
-            pauseBtn.innerText = '恢复滚动';
-            pauseBtn.style.backgroundColor = '#ffa500';
             document.body.classList.toggle('helper-mode-clean');
             const isActive = document.body.classList.contains('helper-mode-clean');
-            clearBtn.innerText = isActive ? '取消清理(显示全部)' : '清理列表(移除互关)';
+            clearBtn.innerText = isActive ? '显示全部' : '移除互关';
             clearBtn.style.backgroundColor = isActive ? '#00ba7c' : '#1d9bf0';
         };
         
-        controlPanel.appendChild(pauseBtn);
-        controlPanel.appendChild(clearBtn);
-        controlPanel.appendChild(stopBtn);
+        stopBtn.onclick = () => {
+            clearInterval(detectionTask);
+            clearInterval(uiTask);
+            stopScrolling();
+            style.remove();
+            document.body.classList.remove('helper-mode-clean');
+            controlPanel.remove();
+        };
+
+        btnRow.appendChild(scrollBtn);
+        btnRow.appendChild(clearBtn);
+        btnRow.appendChild(stopBtn);
+        configRow.appendChild(speedLabel);
+        configRow.appendChild(speedInput);
+        
+        controlPanel.appendChild(btnRow);
+        controlPanel.appendChild(configRow);
         document.body.appendChild(controlPanel);
     };
 
     // 持续检查是否需要初始化 UI（因为 Twitter 是 SPA）
-    setInterval(() => {
+    const uiTask = setInterval(() => {
         if (window.location.href.includes('/following')) {
             initUI();
         } else {
